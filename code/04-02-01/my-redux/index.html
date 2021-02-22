@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MyRedux</title>
+</head>
+<body>
+  <button id="increment">+1</button>
+  <span id="count">0</span>
+  <button id="decrement">-1</button>
+  <script src="./redux.js"></script>
+  <script src="./middlewares/logger.js"></script>
+  <script src="./middlewares/thunk.js"></script>
+  <script>
+
+    const incrementEle = document.getElementById('increment')
+    const decrementEle = document.getElementById('decrement')
+    const count = document.getElementById('count')
+
+    function enhancer (createStore) {
+      return function (reducer, preloadedState) {
+        let store = createStore(reducer, preloadedState)
+        let dispatch = store.dispatch
+
+        function _dispatch (action) {
+          if (typeof action === 'function') {
+            return action(dispatch)
+          }
+          dispatch(action)
+        }
+
+        return {
+          ...store,
+          dispatch: _dispatch,
+        }
+      }
+    }
+
+    function counterReducer (state, action) {
+      switch (action.type) {
+        case 'increment':
+          return state + 1
+        case 'decrement':
+          return state - 1
+        default:
+          return state
+      }
+    }
+
+    let rootReducer = combineReducers({
+      counter: counterReducer,
+    })
+
+    // 创建 store
+    const store = createStore(rootReducer, { counter: 100 }, applyMiddleware(logger, thunk))
+
+    store.subscribe(() => {
+      // console.log(store.getState())
+      count.innerHTML = store.getState().counter
+    })
+
+    let actions = bindActionCreators({ increment, decrement }, store.dispatch)
+
+    function increment () {
+      return { type: 'increment' }
+    }
+
+    function decrement () {
+      return { type: 'decrement' }
+    }
+
+    incrementEle.onclick = function () {
+      actions.increment()
+      // store.dispatch({ type: 'increment' })
+    }
+    decrementEle.onclick = function () {
+      // store.dispatch({ type: 'decrement' })
+      actions.decrement()
+    }
+  </script>
+</body>
+</html>
